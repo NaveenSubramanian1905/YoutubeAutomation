@@ -1,160 +1,136 @@
 package demo;
 
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.testng.asserts.SoftAssert;
 
 public class TestCases {
-    ChromeDriver driver;
-    FlipkartWrapper wrapper;
+        ChromeDriver driver;
+        YoutubeWrapper wrapper;
+        SoftAssert softAssert;
 
-    @BeforeSuite(alwaysRun = true)
-    public void initialize_driver() {
-        driver = new ChromeDriver();
-        driver.manage().window().maximize();
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-        wrapper = new FlipkartWrapper(driver);
-    }
+        @BeforeClass(alwaysRun = true)
+        public void initialize_driver() {
+                driver = new ChromeDriver();
+                driver.manage().window().maximize();
+                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+                wrapper = new YoutubeWrapper(driver);
+                softAssert = new SoftAssert();
+        }
 
-    @AfterSuite(alwaysRun = true)
-    public void close_and_quit_driver() {
-        driver.close();
-        driver.quit();
-    }
-    
-    @Test(priority = 0, description = "Get the count of Washing Machine has rating less than 4")
-    public void Washing_Machine() throws InterruptedException {
-        System.out.println("Start Test case: Get the count of Washing Machine has rating less than 4");
-        driver.get("http://www.flipkart.com");
-        Thread.sleep(2000);
-    
-         wrapper.sendKeysEnter(By.xpath("//input[@placeholder='Search for Products, Brands and More']"), "Washing Machine");
-        System.out.println("Step 01: Search Washing Machine - Completed");
+        @AfterClass(alwaysRun = true)
+        public void close_and_quit_driver() {
+                driver.close();
+                driver.quit();
+        }
 
-        wrapper.clickElement(By.xpath("//div[@class='zg-M3Z' and text()='Popularity']"));
-        System.out.println("Step 02: Sort by Popularity - Completed");
-        
-        List<WebElement> productsRatings = wrapper.findElements(By.xpath("//div[@class='_75nlfW']//div[@class='XQDdHH']"));
-        System.out.println("Step 03: Get rating of all products - Completed");
+        // Testcase 01 - Verify the about section in Youtube
+        @Test(priority = 0, description = "Verify the about section in Youtube")
+        public void About_Section() throws InterruptedException {
+                System.out.println("Start Test case: Verify the about section in Youtube");
+                driver.get("https://youtube.com");
+                softAssert.assertTrue(driver.getCurrentUrl().contains("youtube.com"), "URL is incorrect");
 
-        double ratingCriteria = 4.0;
-        int count = 0;
+                wrapper.clickElement(By.xpath("//*[text()='About']"));
+                String aboutContent = wrapper.getElementText(By.xpath("//section[@class='ytabout__content']"));
 
-        for (int i = 0; i < productsRatings.size(); i++) {
-            try {
-                WebElement productRating = productsRatings.get(i);
-                String rating = productRating.getText();
-                float ratingValue = Float.parseFloat(rating);
-                if(ratingCriteria >= ratingValue){
-                    count++;
+                System.out.println(aboutContent);
+
+                softAssert.assertAll();
+                System.out.println("End Test case: Verify the about section in Youtube");
+        }
+
+        // Testcase 02 - Verify the Film section in Youtube
+        @Test(priority = 0, description = "Verify the Film section in Youtube")
+        public void FilmsTab() throws InterruptedException {
+                System.out.println("Start Test case: Verify the Film section in Youtube");
+                driver.get("https://youtube.com");
+                wrapper.clickElement(By.xpath("//yt-formatted-string[text()='Movies']"));
+                wrapper.scrollToRight(By.xpath("//div[@id='right-arrow']//button"));
+
+                List<WebElement> rating = wrapper.findElements(By.xpath(
+                                "//div[@id='scroll-outer-container']/div/div/ytd-grid-movie-renderer/ytd-badge-supported-renderer/div[2]/p"));
+                String lastRatingText = rating.get(rating.size() - 1).getText();
+                System.out.println(lastRatingText);
+                softAssert.assertTrue(lastRatingText.equals("A"), "Movie is not marked as Mature");
+
+                List<WebElement> genre = wrapper
+                                .findElements(By.xpath(
+                                                "//div[@id='scroll-outer-container']/div/div/ytd-grid-movie-renderer/a/span"));
+                String lastGenreText = genre.get(genre.size() - 1).getText();
+                String[] lastGenreTextSplit = lastGenreText.split("•");
+                System.out.println(lastGenreTextSplit[0].trim());
+                softAssert.assertTrue(
+                                lastGenreTextSplit[0].trim().equals("Comedy") || lastGenreText.equals("Animation"),
+                                "Movie is neither Comedy nor Animation");
+
+                softAssert.assertAll();
+                System.out.println("End Test case: Verify the Film section in Youtube");
+        }
+
+        // Testcase 03 - Verify the Music section in Youtube
+        @Test(priority = 0, description = "Verify the Music section in Youtube")
+        public void MusicTab() throws InterruptedException {
+                System.out.println("Start Test case: Verify the Music section in Youtube");
+                driver.get("https://youtube.com");
+                wrapper.clickElement(By.xpath("//yt-formatted-string[text()='Music']"));
+                wrapper.scrollToRight(
+                                By.xpath("//span[contains(.,'Biggest Hits')]//ancestor::div[6]//div[@id='right-arrow']//button"));
+
+                List<WebElement> musicPlayList = wrapper.findElements(By.xpath(
+                                "//span[contains(.,'Biggest Hits')]//ancestor::div[6]//div[@id='scroll-outer-container']/div/div/ytd-compact-station-renderer/div/a/h3"));
+                String lastMusicPlayList = musicPlayList.get(musicPlayList.size() - 1).getText();
+                System.out.println(lastMusicPlayList);
+
+                List<WebElement> musicTrackList = wrapper
+                                .findElements(By.xpath(
+                                                "//span[contains(.,'Biggest Hits')]//ancestor::div[6]//div[@id='scroll-outer-container']/div/div/ytd-compact-station-renderer/div/a/p"));
+                String lastMusicTrackList = musicTrackList.get(musicTrackList.size() - 1).getText();
+                String[] lastMusicTrackListSplit = lastMusicTrackList.split("tracks");
+                System.out.println(lastMusicTrackListSplit[0].trim());
+                int trackCount = Integer.parseInt(lastMusicTrackListSplit[0].trim());
+                softAssert.assertTrue(trackCount <= 50,
+                                "Number of tracks listed is not less than or equal to 50");
+
+                softAssert.assertAll();
+                System.out.println("End Test case: Verify the Music section in Youtube");
+        }
+
+        // Testcase 04 - Verify the News section in Youtube
+        @Test(priority = 0, description = "Verify the News section in Youtube")
+        public void NewsTab() throws InterruptedException {
+                System.out.println("Start Test case: Verify the News section in Youtube");
+                driver.get("https://youtube.com");
+                wrapper.clickElement(By.xpath("//yt-formatted-string[text()='News']"));
+                int totalLikes = 0;
+                for (int i = 1; i <= 3; i++) {
+                        String header = wrapper.getElementText(By.xpath(
+                                        "(//div[@id='rich-shelf-header-container' and contains(.,'Latest news posts')]//ancestor::div[1]//div[@id='contents']//div[@id='header'])["
+                                                        + i + "]"));
+                        String[] headerSplit = header.split("•");
+                        System.out.println(headerSplit[0].trim());
+                        String body = wrapper.getElementText(By.xpath(
+                                        "(//div[@id='rich-shelf-header-container' and contains(.,'Latest news posts')]//ancestor::div[1]//div[@id='contents']//div[@id='body'])["
+                                                        + i + "]"));
+                        System.out.println(body);
+                        String likes = wrapper.getElementText(By.xpath(
+                                        "(//div[@id='rich-shelf-header-container' and contains(.,'Latest news posts')]//ancestor::div[1]//div[@id='contents']//span[@id='vote-count-middle'])["
+                                                        + i + "]"));
+                        if (likes == "") {
+                                likes = "0";
+                        }
+                        int likesCount = Integer.parseInt(likes);
+                        totalLikes += likesCount;
                 }
-            } catch (StaleElementReferenceException e) {
-                productsRatings = wrapper.findElements(By.xpath("//div[@class='_75nlfW']//div[@class='XQDdHH']"));
-                i--;
-            }
-            Thread.sleep(1000);
+                System.out.println("Total likes of top 3 posts : " + totalLikes);
+                System.out.println("End Test case: Verify the News section in Youtube");
         }
-        System.out.println("Result: Count of all products who has less than 4.0 rating is "+count);
-        System.out.println("End Test case: Get the count of Washing Machine has rating less than 4");
-    }
-
-    @Test(priority = 1, description = "Print the Titles and discount % of items with more than 17% discount")
-    public void iPhone() throws InterruptedException {
-        System.out.println("Start Test case: Print the Titles and discount % of items with more than 17% discount");
-        driver.get("http://www.flipkart.com");
-        Thread.sleep(2000);
-    
-         wrapper.sendKeysEnter(By.xpath("//input[@placeholder='Search for Products, Brands and More']"), "iPhone");
-        System.out.println("Step 01: Search iPhone - Completed");
-        
-        List<WebElement> products = wrapper.findElements(By.xpath("//div[@class='_75nlfW']"));
-        System.out.println("Step 02: Get all products in the list - Completed");
-
-        int discountCriteria = 17;
-
-        for (int i = 0; i < products.size(); i++) {
-            try {
-                WebElement product = products.get(i);
-                String title = product.findElement(By.xpath(".//div[@class='KzDlHZ']")).getText();
-                String discountStr = product.findElement(By.xpath(".//div[@class='UkUFwK']/span")).getText();
-                String discountStrTrim = discountStr.replace("% off", "").trim();
-                int discount = Integer.parseInt(discountStrTrim);
-                if(discountCriteria <= discount){
-                    System.out.println(title+" : "+discount);
-                }
-            } catch (StaleElementReferenceException e) {
-                products = wrapper.findElements(By.xpath("//div[@class='_75nlfW']"));
-                i--;
-            }
-            Thread.sleep(1000);
-        }
-        System.out.println("End Test case: Print the Titles and discount % of items with more than 17% discount");
-    }
-    
-    @Test(priority = 2, description = "Print the Title and image URL of the 5 items with highest number of reviews")
-    public void Coffee_Mug() throws InterruptedException {
-        System.out.println("Start Test case: Print the Title and image URL of the 5 items with highest number of reviews");
-        driver.get("http://www.flipkart.com");
-        Thread.sleep(2000);
-    
-         wrapper.sendKeysEnter(By.xpath("//input[@placeholder='Search for Products, Brands and More']"), "Coffee Mug");
-        System.out.println("Step 01: Search Coffee Mug - Completed");
-
-        wrapper.clickElement(By.xpath("//div[@title='4★ & above']//div[@class='XqNaEv']"));
-        System.out.println("Step 02: Filter 4* and above - Completed");
-        
-        List<WebElement> products = wrapper.findElements(By.xpath("//div[@class='slAVV4']"));
-        System.out.println("Step 03: Get all products in the list - Completed");
-
-        HashMap<String, Integer> titleAndReview = new HashMap<String, Integer>();
-        HashMap<String, String> titleAndURL = new HashMap<String, String>();
-
-        for (int i = 0; i < products.size(); i++) {
-            try {
-                WebElement product = products.get(i);
-                String title = product.findElement(By.xpath(".//a[@class='wjcEIp']")).getText();
-                WebElement imgEle = product.findElement(By.xpath(".//img"));
-                String imgURL = imgEle.getAttribute("src");
-                String reviewStr = product.findElement(By.xpath(".//span[@class='Wphh3N']")).getText();
-                reviewStr = reviewStr.replace("(", "").replace(")", "").replace(",", "").trim();
-                int review = Integer.parseInt(reviewStr);                
-                titleAndReview.putIfAbsent(title, review);
-                titleAndURL.putIfAbsent(title, imgURL);
-
-            } catch (StaleElementReferenceException e) {
-                products = wrapper.findElements(By.xpath("//div[@class='_75nlfW']"));
-                i--;
-            }
-            Thread.sleep(1000);
-        }
-        List<String> topFiveTitles = TopFive(titleAndReview);
-
-        for (String title : topFiveTitles) {
-            if (titleAndURL.containsKey(title)) {
-                String url = titleAndURL.get(title);
-                System.out.println("Title: " + title + ", Image URL: " + url);
-            }
-        }
-        System.out.println("End Test case: Print the Title and image URL of the 5 items with highest number of reviews");
-    }
-    public static List<String> TopFive(Map<String, Integer> topfive) {
-        return topfive.entrySet()
-                  .stream()
-                  .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                  .limit(5)
-                  .map(Map.Entry::getKey)
-                  .collect(Collectors.toList());
-    }
 }
